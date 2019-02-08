@@ -11,6 +11,8 @@ black = "*"
 [packages]
 tornado = "*"
 logzero = "*"
+watson-developer-cloud = "*"
+requests = "*"
 
 [requires]
 python_version = "3.7"
