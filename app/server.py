@@ -31,6 +31,19 @@ class VAPIServer(tornado.web.RequestHandler):
                     "action": "record",
                     "eventUrl": [f"{os.environ['SERVER_URL']}/recordings"],
                 },
+                {
+                    "action": "connect",
+                    "eventUrl": [f"{os.environ['SERVER_URL']}"],
+                    "from": os.environ["NEXMO_VIRTUAL_NUMBER"],
+                    "endpoint": [
+                        {
+                            "type": "websocket",
+                            "uri": f"{os.environ['SERVER_URL']}/inbound-call-socket",
+                            "content-type": "audio/l16;rate=16000",
+                            "headers": {},
+                        }
+                    ],
+                },
             ]
         )
 
