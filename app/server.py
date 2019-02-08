@@ -9,6 +9,7 @@ from tornado import gen
 from tornado import escape
 from tornado.escape import utf8
 from logzero import logfile, logger
+from watson_developer_cloud import ToneAnalyzerV3
 
 logfile("/tmp/pycon-colombia-workshop.log", maxBytes=1e6, backupCount=3)
 
@@ -66,6 +67,12 @@ class InboundCallHandler(tornado.websocket.WebSocketHandler):
             on_message_callback=self.on_transcriber_message,
         )
 
+        self.tone_analyzer = ToneAnalyzerV3(
+            username=os.environ["WATSON_TONE_ANALYZER_USERNAME"],
+            password=os.environ["WATSON_TONE_ANALYZER_PASSWORD"],
+            version="2016-05-19",
+        )
+
     @property
     def transcriber_token(self):
         resp = requests.get(
@@ -83,7 +90,14 @@ class InboundCallHandler(tornado.websocket.WebSocketHandler):
             message = json.loads(message)
             if "results" in message:
                 transcript = message["results"][0]["alternatives"][0]["transcript"]
-                logger.info(transcript)
+                tone_results = self.tone_analyzer.tone(
+                    tone_input=transcript, content_type="text/plain"
+                )
+                logger.info(
+                    tone_results.get_result()["document_tone"]["tone_categories"][0][
+                        "tones"
+                    ]
+                )
 
     @gen.coroutine
     def on_message(self, message):
