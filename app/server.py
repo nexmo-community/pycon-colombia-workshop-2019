@@ -26,7 +26,11 @@ class VAPIServer(tornado.web.RequestHandler):
                     "streamUrl": [
                         f"{os.environ['SERVER_URL']}/static/British-calls-recorded.mp3"
                     ],
-                }
+                },
+                {
+                    "action": "record",
+                    "eventUrl": [f"{os.environ['SERVER_URL']}/recordings"],
+                },
             ]
         )
 
@@ -36,11 +40,21 @@ class VAPIServer(tornado.web.RequestHandler):
         self.write([{"status": "ok"}])
 
 
+class RecordingsServer(tornado.web.RequestHandler):
+    def post(self):
+        recording_meta = json.loads(self.request.body)
+        logger.info(
+            f"New recording available for {recording_meta['conversation_uuid']}"
+        )
+        self.write("OK")
+
+
 def make_app():
     return tornado.web.Application(
         [
             (r"/static/(.*)", tornado.web.StaticFileHandler, {"path": "app/static"}),
             (r"/", VAPIServer),
+            (r"/recordings", RecordingsServer),
         ]
     )
 
