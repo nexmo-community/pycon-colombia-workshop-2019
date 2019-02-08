@@ -2,6 +2,7 @@
 
 .vscode
 private.key
+.env
 
 #### python ####
 # Byte-compiled / optimized / DLL files

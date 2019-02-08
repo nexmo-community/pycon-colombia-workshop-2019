@@ -1,3 +1,4 @@
+import os
 import json
 import tornado.ioloop
 import tornado.web
@@ -18,7 +19,16 @@ class VAPIServer(tornado.web.RequestHandler):
     def get(self):
         to = self.get_argument("to", None, True)
         logger.info(f"NCCO fetched for call to {to}")
-        self.write([{"action": "talk", "text": "Hello PyCon"}])
+        self.write(
+            [
+                {
+                    "action": "stream",
+                    "streamUrl": [
+                        f"{os.environ['SERVER_URL']}/static/British-calls-recorded.mp3"
+                    ],
+                }
+            ]
+        )
 
     def post(self):
         event = json.loads(self.request.body)
@@ -27,7 +37,12 @@ class VAPIServer(tornado.web.RequestHandler):
 
 
 def make_app():
-    return tornado.web.Application([(r"/", VAPIServer)])
+    return tornado.web.Application(
+        [
+            (r"/static/(.*)", tornado.web.StaticFileHandler, {"path": "app/static"}),
+            (r"/", VAPIServer),
+        ]
+    )
 
 
 if __name__ == "__main__":
