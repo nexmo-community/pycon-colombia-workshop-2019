@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <title>Realtime sentiment dashboard</title>
+  <link rel="stylesheet" href="/static/css/app.css" />
+</head>
+
+<body>
+  <canvas id='chart'></canvas>
+
+  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/smoothie/1.34.0/smoothie.js"></script>
+  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/gsap/1.20.3/TweenLite.min.js"></script>
+  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/gsap/latest/plugins/CSSPlugin.min.js"></script>
+
+  <script>
+    Array.prototype.randomElement = function () {
+      return this[Math.floor(Math.random() * this.length)]
+    }
+
+    var dimension = [document.documentElement.clientWidth, document.documentElement.clientHeight];
+    var c = document.getElementById("chart");
+    c.width = dimension[0] - 4;
+    c.height = dimension[1] - 4;
+
+    var smoothie = new SmoothieChart({
+      grid: {
+        strokeStyle: 'rgba(172, 179, 185, 0.1)',
+        fillStyle: 'rgba(73, 88, 103, 1)',
+        lineWidth: 1,
+        millisPerLine: 250,
+        verticalSections: 12,
+        borderVisible: false
+      },
+      labels: {
+        disabled: true
+      }
+    });
+    smoothie.streamTo(document.getElementById("chart"), 1000);
+
+    var emotions = {
+      anger: new TimeSeries(),
+      disgust: new TimeSeries(),
+      fear: new TimeSeries(),
+      joy: new TimeSeries(),
+      sadness: new TimeSeries()
+    }
+
+    // Add to SmoothieChart
+    smoothie.addTimeSeries(
+      emotions['anger'],
+      {
+        strokeStyle: 'rgba(240, 58, 71, 1)',
+        fillStyle: 'rgba(240, 58, 71, 0.4)',
+        lineWidth: 3
+      }
+    );
+    smoothie.addTimeSeries(
+      emotions['disgust'],
+      {
+        strokeStyle: 'rgba(216, 137, 47, 1)',
+        fillStyle: 'rgba(216, 137, 47, 0.4)',
+        lineWidth: 3
+      }
+    );
+    smoothie.addTimeSeries(
+      emotions['fear'],
+      {
+        strokeStyle: 'rgba(255, 246, 114, 1)',
+        fillStyle: 'rgba(255, 246, 114, 0.4)',
+        lineWidth: 3
+      }
+    );
+    smoothie.addTimeSeries(
+      emotions['joy'],
+      {
+        strokeStyle: 'rgba(181, 51, 191, 1)',
+        fillStyle: 'rgba(181, 51, 191, 0.4)',
+        lineWidth: 3
+      }
+    );
+    smoothie.addTimeSeries(
+      emotions['sadness'],
+      {
+        strokeStyle: 'rgba(22, 44, 81, 1)',
+        fillStyle: 'rgba(22, 44, 81, 0.4)',
+        lineWidth: 3
+      }
+    );
+
+    function add_emoji(emoji) {
+      var span = document.createElement('span');
+      span.className = 'emoji';
+      span.appendChild(document.createTextNode(emoji));
+      span.style.right = (Math.round(Math.random() * 60) * -1) + 'px';
+      span.style.bottom = Math.round(Math.random() * 300) + 'px';
+      span.style.fontSize = (Math.round(Math.random() * 20) + 12) + 'px';
+
+      document.body.appendChild(span);
+      TweenLite.to(span, Math.round(Math.random() * 3, 1) + 4, {
+        left: Math.round(Math.random() * 6) + 'px',
+        opacity: 0,
+        ease: [
+          Power1.easeInOut, Power1.easeOut, Power1.easeIn,
+          Power2.easeInOut, Power2.easeOut, Power2.easeIn,
+          Power3.easeInOut, Power3.easeOut, Power3.easeIn,
+          Power4.easeInOut, Power4.easeOut, Power4.easeIn
+        ].randomElement(),
+      });
+    }
+
+    var websocket = new WebSocket('{{ server_url }}/dashboard-socket');
+    websocket.onmessage = function (evt) {
+      var top = null;
+
+      JSON.parse(evt.data).map(function (emotion) {
+        emotions[emotion.tone_id].append(new Date().getTime(), emotion.score)
+
+        if (!top || emotion.score > top.score) {
+          top = {
+            'id': emotion.tone_id,
+            'score': emotion.score
+          }
+        }
+      });
+
+      switch (top.id) {
+        case 'anger':
+          add_emoji(['😠', '😡', '🤬', '👿'].randomElement())
+          break;
+        case 'disgust':
+          add_emoji(['🤢', '🤮', '💩'].randomElement())
+          break;
+        case 'fear':
+          add_emoji(['😱', '😰', '😨', '💀'].randomElement())
+          break;
+        case 'joy':
+          add_emoji(['😁', '😃', '🤩', '😄', '😊'].randomElement())
+          break;
+        case 'sadness':
+          add_emoji(['😞', '😢', '😭', '😔'].randomElement())
+          break;
+      }
+    }
+  </script>
+</body>
+
+</html>

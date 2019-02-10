@@ -14,6 +14,11 @@ from watson_developer_cloud import ToneAnalyzerV3
 logfile("/tmp/pycon-colombia-workshop.log", maxBytes=1e6, backupCount=3)
 
 
+class DashboardUIHandler(tornado.web.RequestHandler):
+    def get(self):
+        self.render("templates/dashboard.html", server_url=os.environ["WS_SERVER_URL"])
+
+
 class VAPIServer(tornado.web.RequestHandler):
     def write(self, chunk):
         chunk = escape.json_encode(chunk)
@@ -134,6 +139,7 @@ def make_app():
             (r"/", VAPIServer),
             (r"/inbound-call-socket", InboundCallHandler),
             (r"/recordings", RecordingsServer),
+            (r"/dashboard", DashboardUIHandler),
         ]
     )
 

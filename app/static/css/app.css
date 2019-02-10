@@ -1,0 +1,14 @@
+* {
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  background-color: rgba(73, 88, 103, 1);
+  overflow: hidden;
+}
+
+.emoji {
+  display: block;
+  position: absolute;
+}
