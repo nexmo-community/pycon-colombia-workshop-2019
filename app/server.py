@@ -19,6 +19,28 @@ class DashboardUIHandler(tornado.web.RequestHandler):
         self.render("templates/dashboard.html", server_url=os.environ["WS_SERVER_URL"])
 
 
+class DashboardHandler(tornado.websocket.WebSocketHandler):
+
+    connected_clients = set()
+
+    def check_origin(self, origin):
+        return True
+
+    def open(self):
+        logger.info("New Dashboard WebSocket connection")
+        DashboardHandler.connected_clients.add(self)
+
+    def on_close(self):
+        logger.info("Dashboard WebSocket connection closed")
+        DashboardHandler.connected_clients.remove(self)
+
+    @classmethod
+    def send_updates(cls, tones):
+        logger.debug(tones)
+        for connected_client in cls.connected_clients:
+            connected_client.write_message(tones)
+
+
 class VAPIServer(tornado.web.RequestHandler):
     def write(self, chunk):
         chunk = escape.json_encode(chunk)
@@ -97,12 +119,10 @@ class InboundCallHandler(tornado.websocket.WebSocketHandler):
                 transcript = message["results"][0]["alternatives"][0]["transcript"]
                 tone_results = self.tone_analyzer.tone(
                     tone_input=transcript, content_type="text/plain"
-                )
-                logger.info(
-                    tone_results.get_result()["document_tone"]["tone_categories"][0][
-                        "tones"
-                    ]
-                )
+                ).get_result()
+                tones = tone_results["document_tone"]["tone_categories"][0]["tones"]
+
+                DashboardHandler.send_updates(json.dumps(tones))
 
     @gen.coroutine
     def on_message(self, message):
@@ -139,6 +159,7 @@ def make_app():
             (r"/", VAPIServer),
             (r"/inbound-call-socket", InboundCallHandler),
             (r"/recordings", RecordingsServer),
+            (r"/dashboard-socket", DashboardHandler),
             (r"/dashboard", DashboardUIHandler),
         ]
     )
